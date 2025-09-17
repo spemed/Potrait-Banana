@@ -1,0 +1,7 @@
+{
+  "name": "Potorait Banana-AI Professional Potorait Generator",
+  "description": "Upload a portrait and transform it into various professional and artistic headshots using AI. Inspired by the sleek design of anytype.io.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
