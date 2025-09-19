@@ -11,7 +11,7 @@ export const Header: React.FC<HeaderProps> = ({ onUpgrade, isSubscribed }) => {
     <header className="py-4">
       <div className="container mx-auto px-4 flex justify-between items-center">
         <span className="font-serif font-medium text-2xl tracking-tighter text-gray-900 dark:text-gray-100">
-          Portrait Banana
+          Portrait Banana 肖像香蕉
         </span>
         <button 
           onClick={onUpgrade}

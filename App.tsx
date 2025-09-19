@@ -3,11 +3,10 @@ import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { ImageGrid } from './components/ImageGrid';
 import { LoadingSpinner } from './components/LoadingSpinner';
-// FIX: The original error was that geminiService.ts was not a module. This is resolved by providing its full content.
+import { PaymentModal } from './components/PaymentModal';
 import { generatePortraits, isApiKeyConfigured } from './services/geminiService';
 import type { GeneratedImage } from './types';
 
-// FIX: Replaced instructions to edit code with a message about environment variables, per guidelines.
 function ApiKeyConfigurationMessage() {
   return (
     <div className="bg-red-50 text-red-900 p-8 rounded-lg max-w-4xl mx-auto my-12 font-mono text-left">
@@ -32,6 +31,7 @@ function App() {
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubscribed, setIsSubscribed] = useState<boolean>(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState<boolean>(false);
 
   const keyIsConfigured = isApiKeyConfigured();
 
@@ -54,13 +54,11 @@ function App() {
     setSelectedImages([]);
 
     try {
-      // FIX: Call generatePortraits with a progress callback to update state as images are created.
       await generatePortraits(uploadedImageFile, (newImage) => {
         setGeneratedImages(prevImages => [...prevImages, newImage]);
       });
     } catch (e) {
       console.error(e);
-      // FIX: Provide a more helpful error message to the user.
       setError('An error occurred while generating portraits. This might be due to API rate limits or a network issue. Please check the console and try again later.');
     } finally {
       setIsGenerating(false);
@@ -78,14 +76,14 @@ function App() {
         return prevSelected.filter(imageId => imageId !== id);
       }
       
-      if (!isPremium && freeSlotsUsed >= 3) {
-        alert("You can only select up to 3 free images.");
+      if (!isPremium && freeSlotsUsed >= 3 && !isSubscribed) {
+        alert("You can only select up to 3 free images. Upgrade to Pro for unlimited selections.");
         return prevSelected;
       }
       
       return [...prevSelected, id];
     });
-  }, [generatedImages]);
+  }, [generatedImages, isSubscribed]);
 
   const handleDownload = useCallback(() => {
     const selectedArePremium = generatedImages
@@ -93,26 +91,37 @@ function App() {
       .some(img => img.isPremium);
 
     if (selectedArePremium && !isSubscribed) {
-      alert('This selection includes premium styles. Please upgrade to Pro to download, or enter your test code. ($9.99)');
+      setIsPaymentModalOpen(true);
       return;
     }
     
     if (selectedImages.length > 0) {
-      const message = isSubscribed 
-        ? `Downloading ${selectedImages.length} images as a Pro user... (This is a demo feature)`
-        : `Downloading ${selectedImages.length} free images... (This is a demo feature)`;
-      alert(message);
+      selectedImages.forEach((id, index) => {
+        const image = generatedImages.find(img => img.id === id);
+        if (image) {
+          // Use a timeout to prevent the browser from blocking multiple immediate downloads
+          setTimeout(() => {
+            const link = document.createElement('a');
+            link.href = image.src;
+            const sanitizedName = image.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
+            link.download = `portrait-banana-${sanitizedName}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }, index * 300); // Stagger downloads
+        }
+      });
     }
   }, [selectedImages, generatedImages, isSubscribed]);
 
   const handleUpgrade = useCallback(() => {
-    const code = prompt("Do you have a test account code? Please enter it here:");
-    if (code === 'BANANA2024') {
-        setIsSubscribed(true);
-        alert("Success! Pro account activated for this session.");
-    } else if (code) { // if user entered something other than null
-        alert("Invalid code.");
-    }
+    setIsPaymentModalOpen(true);
+  }, []);
+
+  const handleSubscriptionSuccess = useCallback(() => {
+    setIsSubscribed(true);
+    setIsPaymentModalOpen(false);
+    alert("Success! Pro account activated for this session.");
   }, []);
 
 
@@ -128,12 +137,10 @@ function App() {
           isApiKeyConfigured={keyIsConfigured}
         />
 
-        {/* FIX: Replaced instructions to edit code with a message about environment variables. */}
         {!keyIsConfigured && <ApiKeyConfigurationMessage />}
 
         {isGenerating && <LoadingSpinner />}
         
-        {/* Render the grid even while generating to show progress */}
         {generatedImages.length > 0 && (
           <ImageGrid 
             images={generatedImages}
@@ -144,10 +151,17 @@ function App() {
           />
         )}
 
-        {/* Show error below the grid/spinner if an error occurs */}
         {error && !isGenerating && <p className="text-center text-red-500 my-8">{error}</p>}
 
       </main>
+      
+      {isPaymentModalOpen && (
+        <PaymentModal 
+          isOpen={isPaymentModalOpen} 
+          onClose={() => setIsPaymentModalOpen(false)} 
+          onSubscriptionSuccess={handleSubscriptionSuccess} 
+        />
+      )}
     </div>
   );
 }
