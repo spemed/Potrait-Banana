@@ -9,6 +9,7 @@
   - [x] 第三方按钮（Google/WeChat/Apple/X）点击后直接生成伪用户数据并保存到内存/LocalStorage。 ✅
   - [x] 邮箱登录表单（仅校验格式），提交即创建伪会话。 ✅
   - [x] Header 显示登录后昵称/头像（用占位 Avatar），支持登出。 ✅
+- 真实登录基于access_token(jwt)+refresh_token双token的方案进行开发
 
 ### M2：生成服务前端化演示（任务流与记录视图）
 - [ ] 生成任务状态条与队列模拟：点击「生成」后进入状态机（排队→进行中→完成/失败），用 `setTimeout` 驱动。
